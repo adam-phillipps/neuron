@@ -42,30 +42,26 @@ module Smash
     end
 
     def run
-      # job specific run instructions
       message = lambda { custom_sitrep(extraInfo: @params) }
       logger.info "Task starting... #{message.call}"
       pipe_to(:status_stream) { message.call }
 
-      # TODO: move this method to a demo specific class ASAP
-      @task_status_thread = Thread.new do
+      @task_thread = Thread.new do
         logger.info "Task running... #{message.call}"
         send_frequent_status_updates(message.call.merge(interval: 3))
-        # TODO: move this method to a demo specific class ASAP
-        # use this format to call the new jar file w/ params
+        # job specific run instructions
+        # TODO: move this method to a demo specific Task class ASAP
         # @updates_thread = Thread.new do
-        #   error, results, status = Open3.capture3(
-        #     "java -jar #{scraper} " +
-        #     "#{run_params[:product_id]} " +
-        #     "#{run_params[:title]} " +
-        #     "#{run_params[:user_agent]}\">&2"
-        #   )
+        #   system_command =
+        #     "java -jar -DmodelIndex=\"#{identity}\" " +
+        #     '-DuseLocalFiles=false roas-simulator-1.0.jar'
+        #   error, results, status = Open3.capture3(system_comand)
         # end
       end
       # testing begins
       sleep rand(30..60)
       # testing ends
-      Thread.kill(@task_status_thread)
+      Thread.kill(@task_thread)
     end
 
     def valid?

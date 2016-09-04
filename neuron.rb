@@ -63,9 +63,9 @@ module Smash
                 job.valid? ? process_job(job) : process_invalid_job(job)
                 message =
                   update_message_body(
-                    type: 'SitRep',
-                    content: 'workflow-completed',
-                    extraInfo: { message: "Completed: #{job.params} Moving along..." }
+                    type:         'SitRep',
+                    content:      'workflow-completed',
+                    extraInfo:    { message: "Completed: #{job.params} Moving along..." }
                   )
                 logger.info message
                 pipe_to(:status_stream) { message }
@@ -79,7 +79,7 @@ module Smash
           end
         end
       end
-      # die!
+      die!
     end
 
     def process_invalid_job(job)
