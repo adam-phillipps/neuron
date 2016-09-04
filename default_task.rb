@@ -42,15 +42,17 @@ module Smash
     end
 
     def run
-      # TODO: remove identity after demo
+      # job specific run instructions
       message = lambda { custom_sitrep(extraInfo: @params) }
       logger.info "Task starting... #{message.call}"
       pipe_to(:status_stream) { message.call }
-      # job specific run instructions
 
       # TODO: move this method to a demo specific class ASAP
       @task_status_thread = Thread.new do
-        # testing begins
+        logger.info "Task running... #{message.call}"
+        send_frequent_status_updates(message.call.merge(interval: 3))
+        # TODO: move this method to a demo specific class ASAP
+        # use this format to call the new jar file w/ params
         # @updates_thread = Thread.new do
         #   error, results, status = Open3.capture3(
         #     "java -jar #{scraper} " +
@@ -59,11 +61,10 @@ module Smash
         #     "#{run_params[:user_agent]}\">&2"
         #   )
         # end
-        logger.info "Task running... #{message.call}"
-        send_frequent_status_updates(message.call.merge(interval: 5))
       end
+      # testing begins
       sleep rand(30..60)
-      # testing over
+      # testing ends
       Thread.kill(@task_status_thread)
     end
 
