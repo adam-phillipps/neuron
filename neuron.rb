@@ -11,7 +11,6 @@ require_relative './lib/cloud_powers/synapse/pipe'
 require_relative './lib/cloud_powers/synapse/queue'
 
 module Smash
-
   class Neuron
     include Smash::CloudPowers::Auth
     include Smash::CloudPowers::AwsResources
@@ -20,22 +19,22 @@ module Smash
     include Smash::CloudPowers::Synapse
     include Smash::Delegator
 
-    attr_accessor :instance_id, :job_status, :workflow_status
+    attr_accessor :instance_id, :job_status, :workflow_status, :instance_url
 
     def initialize
-      # begin
+      begin
         logger.info "Neuron waking up..."
-        # Smash::CloudPowers::SmashError.build(:ruby, :workflow, :task)
+        Smash::CloudPowers::SmashError.build(:ruby, :workflow, :task)
         get_awareness!
         @status_thread = Thread.new do
           send_frequent_status_updates(interval: 5, identity: 'neuron')
         end
-        think
-    #   rescue Exception => e
-    #     error_message = format_error_message(e)
-    #     logger.fatal "Rescued in initialize method:\n\t#{error_message}"
-    #     die!
-    #   end
+        poll_for_task
+      rescue Exception => e
+        error_message = format_error_message(e)
+        logger.fatal "Rescued in initialize method:\n\t#{error_message}"
+        die!
+      end
     end
 
     def current_ratio
@@ -53,7 +52,7 @@ module Smash
       @death_threashold ||= (1.0 / env('ratio_denominator').to_f)
     end
 
-    def think
+    def poll_for_task
       catch :die do
         until should_stop?
           poll(:backlog) do |msg, stats|

@@ -18,11 +18,20 @@ For testing/development:
 1. add the environment varialbe ```TESTING=true``` to the bottom line in your .env file then start the neuron with:
 ```$ ruby neuron.rb```
 
-- Alternatively, you can use a 1-liner to add the environment var and the script
+- Alternatively, you can use a 1-liner to set the environment then
+    run the script
 # this has not been tested but it _should_ work (famous last words).
 ```
-$ -e "\$aTESTING=true" \
+$ sed -e "\$aTESTING=true" $(find . -type f -name *.env) \
     && ruby neuron.rb
 ```
 For production:
 /bin/bash ./runNeuron
+
+################################################################################
+#                           Nueron's workflow
+################################################################################
+#
+# - neuron starts and somehow knows which backlog its supposed to check
+#     maybe you can send info to the instance ec2.run_instances()...
+# - do neuron workflow
