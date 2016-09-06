@@ -30,14 +30,8 @@ For production:
 
 
 ################################################################################
-#                           Nueron's workflow
+##                           Nueron's workflow
 ################################################################################
-#
-# - neuron starts and somehow knows which backlog its supposed to check
-#     maybe you can send info to the instance ec2.run_instances()...
-# - do neuron workflow
-=======
-## Nueron's workflow:
 1. Neuron starts
 2. Neuron checks self-tags to find out which project environment it should be
     working in by the tags on the instance.
@@ -62,7 +56,7 @@ For production:
 
 
 ################################################################################
-#                           Nueron's Architecture
+##                           Nueron's Architecture
 ################################################################################
 
 * A Neuron is the base node in the computing piece of the Brain
