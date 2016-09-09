@@ -1,18 +1,36 @@
+_Smash::Brain API documentation_
 ################################################################################
 #                                       Neuron
 ################################################################################
 
-This is the node in the brain project.  It uses the Smash::CloudPowers module,
-which is a sub-module in git, as a wrapper around the AWS SDK.
-
+This is the node in the Brain project that actually 'works on' the difficult
+'[link to: Smash::Job]job' the Brain has been given.
+By the time the [link to: Smash::Task]work arrives to
+the area of concern of the Neurons, it has been broken down into a
+[link to: Smash::Task]task that is successful in the divide and concure method.
+The only real requirement is that only 1 Neuron can exist in one
+Ruby global namespace.  It can start and monitor a Tomcat server,
+for example.  Neurons use the Smash::CloudPowers module, which is a sub-module
+in git, as a wrapper around the AWS SDK.  The API for the Neuron project, just
+like the other peices of the Brain, is geared toward generalization in every
+respect possible, so that it can also extend other cloud services like Azure.
+It is also intended to be written generally so it can provide any service.
+Neurons have a job to run in a given context and it can create any 
+[link to: Smash::Task]task, [link to: Smash::Task]Neron, 
+[link to: Smash::Task]Cerebrum, etc. to do it.  It is also usually on the 
+same server an extra app can be started, used and maintained.
+_note: more time is needed to research individual Neuron optimization_
 ## Configuration ##
 
 1. ```$ cp .neuron.env.example .neuron.env```
 2. add the required values to .neuron.env
-3. Create a Task class.  You can use the default_task as a guide or
-    you can use its code.  It should be set up genericly enough to use for most basic tasks that neurons can run.  _for now_...
+3. Create a Task class.  You can use the task as a guide or you can use its code.
+    It should be set up genericly enough to use for most basic tasks that 
+    Neurons can run.  _for now_...
+    The Demo class (specific demo related job running instructions/support)
+    inherits from the Task class, for example.
 
-## Running ##
+## Setting up/Running ##
 
 For testing/development:
 1. add the environment varialbe ```TESTING=true``` to the bottom line in your .env file then start the neuron with:
@@ -74,7 +92,7 @@ For production:
     _the message is described above, in the workflow_.
   * The file it gets from S3 is a ruby file that has custom methods, like a
     `custom_sitrep` method and a `custom_run` method.  These are the methods that
-    should be invoked and they build off the `DefaultTaks` class.  It also has
+    should be invoked and they build off the `Task` class.  It also has
     the ability to override other task methods to better fit its needs.
 * The Neuron uses the `Smash::CloudPowers` submodule, which is basically an
   Aws Ruby SDK wrapper.

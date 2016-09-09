@@ -1,32 +1,35 @@
 require_relative './lib/cloud_powers/aws_resources'
 require_relative './lib/cloud_powers/synapse/pipe'
 require_relative './lib/cloud_powers/synapse/queue'
+require_relative './lib/cloud_powers/delegator'
 require_relative './lib/cloud_powers/helper'
 
 module Smash
   class Job
+    extend Smash::Delegator
     include Smash::CloudPowers::Auth
     include Smash::CloudPowers::AwsResources
     include Smash::CloudPowers::Helper
     include Smash::CloudPowers::Synapse::Pipe
     include Smash::CloudPowers::Synapse::Queue
 
-    attr_reader :instance_id, :message, :message_body, :board
+    attr_reader :instance_id, :message, :message_body, :state, :workflow
 
     def initialize(id, msg)
       @instance_id = id
       @message = msg
       @message_body = msg.body
-      @board = build_board(:backlog)
+      @board = build_board(workflow.first)
     end
 
     def update_status
       begin
+        instance_url # sets the url <- hostname in instance metadata
         message = "Next state...#{@board.name} -> #{@board.next_board}"
         logger.info message
         # TODO: fugure out how to make this more better.  this way creates another
         # contract you have to follow for the Task class (which could be ok)
-        update = custom_sitrep(message)
+        update = sitrep(message)
 
         delete_queue_message(@board.name)
         @board = build_board(@board.next_board)

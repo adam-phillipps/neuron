@@ -1,6 +1,6 @@
 require 'dotenv'
 Dotenv.load('.neuron.env')
-require_relative 'default_task'
+require_relative 'job'
 require_relative './lib/cloud_powers/aws_resources'
 require_relative './lib/cloud_powers/auth'
 require_relative './lib/cloud_powers/delegator'
@@ -17,24 +17,28 @@ module Smash
     include Smash::CloudPowers::Helper
     include Smash::CloudPowers::SelfAwareness
     include Smash::CloudPowers::Synapse
-    include Smash::Delegator
 
     attr_accessor :instance_id, :job_status, :workflow_status, :instance_url
 
     def initialize
-      begin
+      # begin
         logger.info "Neuron waking up..."
-        Smash::CloudPowers::SmashError.build(:ruby, :workflow, :task)
-        get_awareness!
-        @status_thread = Thread.new do
-          send_frequent_status_updates(interval: 5, identity: 'neuron')
-        end
-        poll_for_task
-      rescue Exception => e
-        error_message = format_error_message(e)
-        logger.fatal "Rescued in initialize method:\n\t#{error_message}"
-        die!
-      end
+
+        # Smash::CloudPowers::SmashError.build(:ruby, :workflow, :task)
+
+        get_awareness! # sets self instance info and sets job info
+
+        # @status_thread = Thread.new do
+        #   send_frequent_status_updates(interval: 5, identity: 'neuron')
+        # end
+
+        until should_stop? do work end
+
+      # rescue Exception => e
+      #   error_message = format_error_message(e)
+      #   logger.fatal "Rescued in initialize method: #{error_message}"
+      #   die!
+      # end
     end
 
     def current_ratio
@@ -52,33 +56,11 @@ module Smash
       @death_threashold ||= (1.0 / env('ratio_denominator').to_f)
     end
 
-    def poll_for_task
-      catch :die do
-        until should_stop?
-          poll(:backlog) do |msg, stats|
-            begin
-              catch :failed_job do
-                job = build_job(@instance_id, msg)
-                job.valid? ? process_job(job) : process_invalid_job(job)
-                message =
-                  update_message_body(
-                    type:         'SitRep',
-                    content:      'workflow-completed',
-                    extraInfo:    { message: "Completed: #{job.params} Moving along..." }
-                  )
-                logger.info message
-                pipe_to(:status_stream) { message }
-              end
-            rescue JSON::ParserError => e
-              error_message = format_error_message(e)
-              logger.error error_message
-              # errors.push_error!(:workflow, error_message)
-              pipe_to(:status_stream) { error_message }
-            end
-          end
-        end
-      end
-      die!
+    def work
+      possible_job = pluck_message(:backlog)
+      byebug
+      job = Job.build(@instance_id, possible_job)
+      job.valid? ? process_job(job) : process_invalid_job(job)
     end
 
     def process_invalid_job(job)
@@ -94,12 +76,16 @@ module Smash
       logger.info("Job found: #{job.message_body}")
 
       pipe_to(:status_stream) do
-        job.custom_sitrep(content: 'workflow-started', extraInfo: job.params)
+        job.custom_sitrep(content: 'workflowStarted', extraInfo: job.params)
       end
 
-      job.update_status
-      job.run
-      job.update_status
+      until job.done?
+        job.next_state
+        pipe_to(:status_stream) do
+          job.sitrep(content: job.state, extraInfo: { state: job.state })
+        end
+        job.run
+      end
     end
 
     def should_stop?
