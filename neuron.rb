@@ -12,6 +12,7 @@ require_relative './lib/cloud_powers/synapse/queue'
 
 module Smash
   class Neuron
+    extend Delegator
     include Smash::CloudPowers::Auth
     include Smash::CloudPowers::AwsResources
     include Smash::CloudPowers::Helper
@@ -21,50 +22,65 @@ module Smash
     attr_accessor :instance_id, :job_status, :workflow_status, :instance_url
 
     def initialize
-      # begin
+      begin
+        @boot_time = Time.now.to_i # TESTING: remove
         logger.info "Neuron waking up..."
 
         # Smash::CloudPowers::SmashError.build(:ruby, :workflow, :task)
 
         get_awareness! # sets self instance info and sets job info
 
-        # @status_thread = Thread.new do
-        #   send_frequent_status_updates(interval: 5, identity: 'neuron')
-        # end
-
+        @status_thread = Thread.new do
+          send_frequent_status_updates(interval: 5, identity: 'neuron')
+        end
         until should_stop? do work end
 
-      # rescue Exception => e
-      #   error_message = format_error_message(e)
-      #   logger.fatal "Rescued in initialize method: #{error_message}"
-      #   die!
-      # end
+      rescue Exception => e
+        error_message = format_error_message(e)
+        logger.fatal "Rescued in initialize method: #{error_message}"
+        die!
+      end
     end
 
     def current_ratio
       backlog = get_count(backlog_address)
       wip = get_count(bot_counter_address)
 
-      ((death_threashold * backlog) - wip).ceil
+      ((efficiency_limit * backlog) - wip).ceil
     end
 
-    def death_ratio_acheived?
-      !!(current_ratio >= death_threashold)
+    def more_work?
+      !!(current_ratio <= efficiency_limit)
     end
 
-    def death_threashold
-      @death_threashold ||= (1.0 / env('ratio_denominator').to_f)
+    def efficiency_limit
+      @efficiency_limit ||= (1.0 / env('ratio_denominator').to_f)
     end
 
     def work
-      possible_job = pluck_message(:backlog)
-      byebug
-      job = Job.build(@instance_id, possible_job)
-      job.valid? ? process_job(job) : process_invalid_job(job)
+      possible_job = pluck_message(:backlog) # FIX: pluck doesn't delete
+      job = Job.build(instance_id, possible_job)
+      job.valid? ? process(job) : process_invalid(job)
     end
 
-    def process_invalid_job(job)
-      logger.info("invalid job:\n#{format_finished_body(job.message.body)}")
+    def process(job)
+      logger.info("Job found: #{job.message_body}")
+
+      pipe_to(:status_stream) do
+        job.sitrep(content: 'workflowStarted', extraInfo: job.params)
+      end
+
+      until job.done?
+        job.workflow.next!
+        pipe_to(:status_stream) do
+          job.sitrep(content: 'workflowInProgress', extraInfo: { state: job.state })
+        end
+        job.run
+      end
+    end
+
+    def process_invalid(job)
+      logger.info "invalid job:\n#{job.inspect}"
       sqs.delete_message(
         queue_url: backlog_address,
         receipt_handle: job.receipt_handle
@@ -72,24 +88,8 @@ module Smash
       # TODO: make sure this is sending a message to needs_attention too
     end
 
-    def process_job(job)
-      logger.info("Job found: #{job.message_body}")
-
-      pipe_to(:status_stream) do
-        job.custom_sitrep(content: 'workflowStarted', extraInfo: job.params)
-      end
-
-      until job.done?
-        job.next_state
-        pipe_to(:status_stream) do
-          job.sitrep(content: job.state, extraInfo: { state: job.state })
-        end
-        job.run
-      end
-    end
-
     def should_stop?
-      !!(time_is_up? ? death_ratio_acheived? : false)
+      time_is_up? ? more_work? : false
     end
 
     def time_is_up?
@@ -105,7 +105,7 @@ module Smash
       backlog = get_count(:backlog_queue_address)
       wip = get_count(:count_queue_address)
 
-      ((death_threashold * backlog) - wip).ceil
+      ((efficiency_limit * backlog) - wip).ceil
     end
   end
 end

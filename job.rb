@@ -3,6 +3,7 @@ require_relative './lib/cloud_powers/synapse/pipe'
 require_relative './lib/cloud_powers/synapse/queue'
 require_relative './lib/cloud_powers/delegator'
 require_relative './lib/cloud_powers/helper'
+require_relative './lib/cloud_powers/workflow'
 
 module Smash
   class Job
@@ -15,32 +16,12 @@ module Smash
 
     attr_reader :instance_id, :message, :message_body, :state, :workflow
 
-    def initialize(id, msg)
+    def initialize(id, msg, opts = {})
+      @workflow = opts[:workflow] || Workflow.new([:backlog, :wip, :finished])
       @instance_id = id
       @message = msg
       @message_body = msg.body
-      @board = build_board(workflow.first)
-    end
-
-    def update_status
-      begin
-        instance_url # sets the url <- hostname in instance metadata
-        message = "Next state...#{@board.name} -> #{@board.next_board}"
-        logger.info message
-        # TODO: fugure out how to make this more better.  this way creates another
-        # contract you have to follow for the Task class (which could be ok)
-        update = sitrep(message)
-
-        delete_queue_message(@board.name)
-        @board = build_board(@board.next_board)
-
-        send_message(@board, update)
-        pipe_to(:status_stream) { update }
-      rescue Exception => e
-        error_message = format_error_message(e)
-        logger.error "Problem updating status:\n#{error_message}"
-        # errors.push_error!(:workflow, error_message)
-      end
+      @board = build_board(@workflow.current) # TODO: implement a workflow
     end
 
     def sitrep_message(opts = {})
@@ -63,6 +44,10 @@ module Smash
           extraInfo: extra_info
         }.merge(opts)
         update_message_body(sitrep_alterations)
+    end
+
+    def state
+      @workflow.current
     end
 
     def task_run_time

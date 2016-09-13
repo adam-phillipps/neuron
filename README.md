@@ -91,7 +91,7 @@ For production:
   * The environment is received in a message which the Cerebrum delivers
     _the message is described above, in the workflow_.
   * The file it gets from S3 is a ruby file that has custom methods, like a
-    `custom_sitrep` method and a `custom_run` method.  These are the methods that
+    `sitrep` method and a `run` method.  These are the methods that
     should be invoked and they build off the `Task` class.  It also has
     the ability to override other task methods to better fit its needs.
 * The Neuron uses the `Smash::CloudPowers` submodule, which is basically an

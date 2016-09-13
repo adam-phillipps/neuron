@@ -12,7 +12,7 @@ module Smash
     end
 
     def finished_task
-      custom_sitrep(extraInfo: { task: @params })
+      sitrep(extraInfo: { task: @params })
     end
 
     def done?
@@ -24,20 +24,22 @@ module Smash
     end
 
     def run
-      # super
-      system_command =
-        "java -jar -DmodelIndex=\"#{identity}\" " +
-        '-DuseLocalFiles=false roas-simulator-1.0.jar'
-
-      # returns [error, results, status]
-      Open3.capture3(system_command)
-
-      # TOOD: figure out how to find success and possibly status
-      @done = true if error.size < 1 # this should be set to true if the jar ran
+      super
+      @task_thread = Thread.new do
+        logger.info "Task running... #{message}"
+        send_frequent_status_updates(message.merge(interval: 3))
+      end
+      system_command = 'printf "biscuits\n"'
+        # "java -jar -DmodelIndex=\"#{identity}\" " +
+        # '-DuseLocalFiles=false roas-simulator-1.0.jar'
+      error, results, status = Open3.capture3(system_command)
+      sleep rand(3..6)
+      @done = true #if error.size < 1 # this should be set to true if the jar ran
+      Thread.kill(@task_thread)
+      [error, results, status]
     end
 
     def sitrep(opts = {})
-      # super
       unless opts.kind_of? Hash
         m = opts.to_s
         opts = { extraInfo: { message: m } }
@@ -47,7 +49,7 @@ module Smash
     end
 
     def valid?
-      @valid ||= !@params['identity'].nil?
+      !!(@valid ||= @params['identity'])
     end
   end
 end
