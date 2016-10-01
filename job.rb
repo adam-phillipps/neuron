@@ -1,9 +1,4 @@
-require_relative './lib/cloud_powers/aws_resources'
-require_relative './lib/cloud_powers/synapse/pipe'
-require_relative './lib/cloud_powers/synapse/queue'
-require_relative './lib/cloud_powers/delegator'
-require_relative './lib/cloud_powers/helper'
-require_relative './lib/cloud_powers/workflow'
+require 'cloud_powers'
 
 module Smash
   class Job
@@ -17,7 +12,7 @@ module Smash
     attr_reader :instance_id, :message, :message_body, :state, :workflow
 
     def initialize(id, msg, opts = {})
-      @workflow = opts[:workflow] || Workflow.new([:backlog, :wip, :finished])
+      @workflow = opts.delete(:workflow) || Workflow.new([:backlog, :wip, :finished])
       @instance_id = id
       @message = msg
       @message_body = msg.body
@@ -33,7 +28,7 @@ module Smash
         extra_info = {}
         if opts.kind_of?(Hash) && opts[:extraInfo]
           custom_info = opts.delete(:extraInfo)
-          extra_info = { 'task-run-time' => task_run_time }.merge(custom_info)
+          extra_info = { 'taskRunTime' => task_run_time }.merge(custom_info)
         else
           opts = {}
         end

@@ -1,16 +1,17 @@
 source 'https://rubygems.org'
 ruby '2.3.1'
 
-gem 'dotenv'
-gem 'bundler'
-gem 'rspec'
+gem 'activesupport-core-ext'
 gem 'aws-sdk', '~> 2'
+gem 'bundler'
+gem 'cloud_powers'
+gem 'dotenv'
+gem 'gmail'
 gem 'httparty'
 gem 'rubyzip'
 gem 'zip-zip'
-gem 'gmail'
-gem 'activesupport-core-ext'
 
 group :test, :development do
   gem 'byebug'
+  gem 'rspec'
 end

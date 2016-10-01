@@ -2,13 +2,20 @@ GEM
   remote: https://rubygems.org/
   specs:
     activesupport-core-ext (4.0.0.3)
-    aws-sdk (2.5.8)
-      aws-sdk-resources (= 2.5.8)
-    aws-sdk-core (2.5.8)
+    aws-sdk (2.6.5)
+      aws-sdk-resources (= 2.6.5)
+    aws-sdk-core (2.6.5)
       jmespath (~> 1.0)
-    aws-sdk-resources (2.5.8)
-      aws-sdk-core (= 2.5.8)
-    byebug (9.0.5)
+    aws-sdk-resources (2.6.5)
+      aws-sdk-core (= 2.6.5)
+    byebug (9.0.6)
+    cloud_powers (0.2.3)
+      activesupport-core-ext (~> 4)
+      aws-sdk (~> 2)
+      dotenv (~> 2.1)
+      httparty (~> 0.14)
+      rubyzip (~> 1.2)
+      zip-zip (~> 0.3)
     diff-lcs (1.2.5)
     dotenv (2.1.1)
     gmail (0.6.0)
@@ -51,6 +58,7 @@ DEPENDENCIES
   aws-sdk (~> 2)
   bundler
   byebug
+  cloud_powers
   dotenv
   gmail
   httparty

@@ -26,8 +26,8 @@ module Smash
     def run
       super
       @task_thread = Thread.new do
-        logger.info "Task running... #{message}"
-        send_frequent_status_updates(message.merge(interval: 3))
+        logger.info "Task running... #{sitrep}"
+        send_frequent_status_updates(sitrep.merge(interval: 3))
       end
       system_command = 'printf "biscuits\n"'
         # "java -jar -DmodelIndex=\"#{identity}\" " +

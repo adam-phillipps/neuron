@@ -1,18 +1,10 @@
 require 'dotenv'
 Dotenv.load('.neuron.env')
-require_relative 'job'
-require_relative './lib/cloud_powers/aws_resources'
-require_relative './lib/cloud_powers/auth'
-require_relative './lib/cloud_powers/delegator'
-require_relative './lib/cloud_powers/helper'
-require_relative './lib/cloud_powers/self_awareness'
-require_relative './lib/cloud_powers/smash_error'
-require_relative './lib/cloud_powers/synapse/pipe'
-require_relative './lib/cloud_powers/synapse/queue'
+require 'cloud_powers'
 
 module Smash
   class Neuron
-    extend Delegator
+    extend Smash::CloudPowers::Delegator
     include Smash::CloudPowers::Auth
     include Smash::CloudPowers::AwsResources
     include Smash::CloudPowers::Helper
@@ -23,18 +15,15 @@ module Smash
 
     def initialize
       begin
+        byebug
         @boot_time = Time.now.to_i # TESTING: remove
         logger.info "Neuron waking up..."
-
         # Smash::CloudPowers::SmashError.build(:ruby, :workflow, :task)
-
         get_awareness! # sets self instance info and sets job info
-
         @status_thread = Thread.new do
           send_frequent_status_updates(interval: 5, identity: 'neuron')
         end
         until should_stop? do work end
-
       rescue Exception => e
         error_message = format_error_message(e)
         logger.fatal "Rescued in initialize method: #{error_message}"
@@ -92,6 +81,10 @@ module Smash
       time_is_up? ? more_work? : false
     end
 
+    def task_storage
+      'neurontasks'
+    end
+
     def time_is_up?
       # returns true when the hour mark approaches
       an_hours_time = 60 * 60
@@ -99,13 +92,6 @@ module Smash
 
       return false if run_time < five_minutes_time
       run_time % an_hours_time < five_minutes_time
-    end
-
-    def current_ratio
-      backlog = get_count(:backlog_queue_address)
-      wip = get_count(:count_queue_address)
-
-      ((efficiency_limit * backlog) - wip).ceil
     end
   end
 end

@@ -1,6 +1,6 @@
 require 'dotenv'
 Dotenv.load('.scc.env')
-require_relative './lib/cloud_powers/synapse/'
+require 'cloud_powres'
 
 
 class TestData

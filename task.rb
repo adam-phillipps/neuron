@@ -1,9 +1,12 @@
+require 'cloud_powers'
 require_relative 'job'
 
 module Smash
   class Task < Smash::Job
+    include Smash::CLoudPowers::Synapse::Pipe
 
-    attr_reader :identity, :instance_url, :params
+    attr_reader :instance_url, :params
+
     def initialize(id, msg)
       @params = JSON.parse(msg.body)
       instance_url # sets the url <- hostname in instance metadata
